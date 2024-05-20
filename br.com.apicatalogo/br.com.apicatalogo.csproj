@@ -28,4 +28,11 @@
     <Folder Include="Models\" />
     <Folder Include="Context\" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Migrations\20240509181838_MigracaoInicial.Designer.cs" />
+    <Compile Remove="Migrations\20240509181838_MigracaoInicial.cs" />
+    <Compile Remove="Migrations\ApiCatalogoContextModelSnapshot.cs" />
+    <Compile Remove="Migrations\20240517132623_InitialCreate.cs" />
+    <Compile Remove="Migrations\20240517132623_InitialCreate.Designer.cs" />
+  </ItemGroup>
 </Project>

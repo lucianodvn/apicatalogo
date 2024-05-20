@@ -5,8 +5,7 @@ using System.Threading.Tasks;
 using br.com.apicatalogo.Context;
 using br.com.apicatalogo.Models;
 using Microsoft.AspNetCore.Mvc;
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+using Microsoft.EntityFrameworkCore;
 
 namespace br.com.apicatalogo.Controllers
 {
@@ -31,29 +30,57 @@ namespace br.com.apicatalogo.Controllers
             return produtos;
         }
 
-        // GET api/values/5
-        [HttpGet("{id}")]
-        public string Get(int id)
+  
+        [HttpGet("{id:int}", Name="ObterProduto")]
+        public ActionResult<Produto> Get(int id)
         {
-            return "value";
+            var produto = _context.Produtos.FirstOrDefault(x => x.IdProduto == id);
+            if(produto is null)
+            {
+               return NotFound("Produto não encontrado.");
+            }
+            return produto;
         }
 
-        // POST api/values
         [HttpPost]
-        public void Post([FromBody]string value)
+        public ActionResult Post([FromBody] Produto produto)
         {
+            if (produto is null)
+            {
+                return BadRequest();
+            }
+
+            _context.Produtos.Add(produto);
+            _context.SaveChanges();
+            return new CreatedAtRouteResult("ObterProduto", new { id = produto.IdProduto }, produto);
         }
 
-        // PUT api/values/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody]string value)
+        [HttpPut("{id:int}")]
+        public ActionResult Put(int id, [FromBody] Produto produto)
         {
+            if (id != produto.IdProduto)
+            {
+                return BadRequest();
+            }
+
+            _context.Produtos.Entry(produto).State = EntityState.Modified;
+            _context.SaveChanges();
+            return Ok();
         }
 
-        // DELETE api/values/5
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        public ActionResult Delete(int id)
         {
+            Produto produtoEspecifico = _context.Produtos.Find(id);
+
+            if(produtoEspecifico is null)
+            {
+                return NotFound("Produto não encontrado.");
+            }
+
+            _context.Produtos.Remove(produtoEspecifico);
+            _context.SaveChanges();
+            return NoContent();
         }
     }
 }
