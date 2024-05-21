@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using br.com.apicatalogo.Context;
 using br.com.apicatalogo.Models;
 using br.com.apicatalogo.Repositories;
+using br.com.apicatalogo.Repositories.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,17 +14,21 @@ namespace br.com.apicatalogo.Controllers
     [Route("[controller]")]
     public class ProdutosController : ControllerBase
     {
+        //pode-se usar somente IProdutoRepository pois ja contem IRepository
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IProdutoRepository _produtoRepository;
 
-        public ProdutosController(IProdutoRepository produtoRepository)
+        public ProdutosController(IUnitOfWork unitOfWork,
+            IProdutoRepository produtoRepository)
         {
+            _unitOfWork = unitOfWork;
             _produtoRepository = produtoRepository;
         }
 
         [HttpGet]
         public ActionResult<IEnumerable<Produto>> Get()
         {
-            var produtos = _produtoRepository.GetProdutos().ToList();
+            var produtos = _unitOfWork.ProdutoRepository.GetAll();
             if (produtos is null)
             {
                 return NotFound("Não há produtos.");
@@ -35,12 +40,24 @@ namespace br.com.apicatalogo.Controllers
         [HttpGet("{id:int}", Name="ObterProduto")]
         public ActionResult<Produto> Get(int id)
         {
-            var produto = _produtoRepository.GetProduto(id);
+            var produto = _unitOfWork.ProdutoRepository.Get(p => p.IdProduto == id);
             if(produto is null)
             {
                return NotFound("Produto não encontrado.");
             }
             return Ok(produto);
+        }
+
+        [HttpGet("produtos/{id}")]
+        public ActionResult<IEnumerable<Produto>> GetProdutosCategorias(int id)
+        {
+            var produtos = _produtoRepository.GetProdutosPorCategoria(id);
+            if(produtos is null)
+            {
+                return NotFound($"Produtos por categoriaId = {id} não encontrado");
+            }
+
+            return Ok(produtos);
         }
 
         [HttpPost]
@@ -51,7 +68,8 @@ namespace br.com.apicatalogo.Controllers
                 return BadRequest("Produto não encontrado");
             }
 
-            _produtoRepository.Create(produto);
+            _unitOfWork.ProdutoRepository.Create(produto);
+            _unitOfWork.SalvarAlteracoes();
 
             return new CreatedAtRouteResult("ObterProduto", new { id = produto.IdProduto }, produto);
         }
@@ -64,30 +82,25 @@ namespace br.com.apicatalogo.Controllers
                 return BadRequest("Produto não encontrado");
             }
 
-            bool produtoAtualizado = _produtoRepository.Update(produto);
+            var produtoAtualizado = _unitOfWork.ProdutoRepository.Update(produto);
+            _unitOfWork.SalvarAlteracoes();
 
-            if (produtoAtualizado)
-            {
-                return Ok(produto);
-            }
-            else
-            {
-                return StatusCode(500, $"Falha ao atualizar produdo de id = {id}");
-            }
+            return Ok(produtoAtualizado);
         }
 
         [HttpDelete("{id}")]
         public ActionResult Delete(int id)
         {
-            bool produtoDeletado = _produtoRepository.Delete(id);
-            if (produtoDeletado)
+            var produto = _unitOfWork.ProdutoRepository.Get(p => p.IdProduto == id);
+            if (produto is null)
             {
-                return Ok($"Produto excluído.");
+                return NotFound($"Produto de id={id} não encontrado.");
             }
-            else
-            {
-               return StatusCode(500, $"Falha ao excluir produto de id = {id}");
-            }
+
+            _unitOfWork.ProdutoRepository.Delete(produto);
+            _unitOfWork.SalvarAlteracoes();
+
+            return Ok(produto);
         }
     }
 }

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using br.com.apicatalogo.Context;
 using br.com.apicatalogo.Models;
 using br.com.apicatalogo.Repositories;
+using br.com.apicatalogo.Repositories.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,18 +15,17 @@ namespace br.com.apicatalogo.Controllers
     [Route("[controller]")]
     public class CategoriasController : ControllerBase
     {
+        private readonly IUnitOfWork _unitOfWork;
 
-        private readonly ICategoriaRepository _categoriaRepository;
-
-        public CategoriasController(ICategoriaRepository categoriaRepository)
+        public CategoriasController(IUnitOfWork unitOfWork)
         {
-            _categoriaRepository = categoriaRepository;
+            _unitOfWork = unitOfWork;
         }
 
         [HttpGet]
         public ActionResult<IEnumerable<Categoria>> Get()
         {
-            var categorias = _categoriaRepository.GetCategorias();
+            var categorias = _unitOfWork.CategoriaRepository.GetAll();
             if (categorias is null)
             {
                 return NotFound("Não há produtos.");
@@ -37,7 +37,7 @@ namespace br.com.apicatalogo.Controllers
         [HttpGet("{id:int}", Name = "ObterCategoria")]
         public ActionResult<Categoria> Get(int id)
         {
-            var categoria = _categoriaRepository.GetCategoria(id);
+            var categoria = _unitOfWork.CategoriaRepository.Get(c => c.CategoriaId == id);
             if (categoria is null)
             {
                 return NotFound("Categoria não encontrado.");
@@ -53,7 +53,8 @@ namespace br.com.apicatalogo.Controllers
                 return BadRequest();
             }
 
-            _categoriaRepository.Create(categoria);
+            _unitOfWork.CategoriaRepository.Create(categoria);
+            _unitOfWork.SalvarAlteracoes();
 
             return new CreatedAtRouteResult("ObterCategoria", new { id = categoria.CategoriaId }, categoria);
         }
@@ -66,23 +67,25 @@ namespace br.com.apicatalogo.Controllers
                 return BadRequest();
             }
 
-            _categoriaRepository.Update(categoria);
-  
+            _unitOfWork.CategoriaRepository.Update(categoria);
+            _unitOfWork.SalvarAlteracoes();
+
             return Ok(categoria);
         }
 
         [HttpDelete("{id}")]
         public ActionResult Delete(int id)
         {
-            Categoria categoriaEspecifico = _categoriaRepository.GetCategoria(id);
+            Categoria categoriaEspecifico = _unitOfWork.CategoriaRepository.Get(c => c.CategoriaId == id);
 
             if (categoriaEspecifico is null)
             {
                 return NotFound($"Categoria não encontrada. Id={id}");
             }
 
-            _categoriaRepository.Delete(id);
-           
+            _unitOfWork.CategoriaRepository.Delete(categoriaEspecifico);
+            _unitOfWork.SalvarAlteracoes();
+
             return Ok(categoriaEspecifico);
         }
     }
