@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using br.com.apicatalogo.Context;
 using br.com.apicatalogo.Models;
+using br.com.apicatalogo.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,40 +15,34 @@ namespace br.com.apicatalogo.Controllers
     public class CategoriasController : ControllerBase
     {
 
-        private readonly ApiCatalogoContext _context;
+        private readonly ICategoriaRepository _categoriaRepository;
 
-        public CategoriasController(ApiCatalogoContext context)
+        public CategoriasController(ICategoriaRepository categoriaRepository)
         {
-            _context = context;
+            _categoriaRepository = categoriaRepository;
         }
 
         [HttpGet]
         public ActionResult<IEnumerable<Categoria>> Get()
         {
-            var categorias = _context.Categorias.ToList();
+            var categorias = _categoriaRepository.GetCategorias();
             if (categorias is null)
             {
                 return NotFound("Não há produtos.");
             }
-            return categorias;
+            return Ok(categorias);
         }
 
 
         [HttpGet("{id:int}", Name = "ObterCategoria")]
         public ActionResult<Categoria> Get(int id)
         {
-            var categoria = _context.Categorias.FirstOrDefault(x => x.CategoriaId == id);
+            var categoria = _categoriaRepository.GetCategoria(id);
             if (categoria is null)
             {
                 return NotFound("Categoria não encontrado.");
             }
-            return categoria;
-        }
-
-        [HttpGet("produtos")]
-        public ActionResult<IEnumerable<Categoria>> GetCategoriasProdutos()
-        {
-            return _context.Categorias.Include(x => x.Produtos).ToList();
+            return Ok(categoria);
         }
 
         [HttpPost]
@@ -57,8 +53,8 @@ namespace br.com.apicatalogo.Controllers
                 return BadRequest();
             }
 
-            _context.Categorias.Add(categoria);
-            _context.SaveChanges();
+            _categoriaRepository.Create(categoria);
+
             return new CreatedAtRouteResult("ObterCategoria", new { id = categoria.CategoriaId }, categoria);
         }
 
@@ -70,24 +66,24 @@ namespace br.com.apicatalogo.Controllers
                 return BadRequest();
             }
 
-            _context.Categorias.Entry(categoria).State = EntityState.Modified;
-            _context.SaveChanges();
-            return Ok();
+            _categoriaRepository.Update(categoria);
+  
+            return Ok(categoria);
         }
 
         [HttpDelete("{id}")]
         public ActionResult Delete(int id)
         {
-            Categoria categoriaEspecifico = _context.Categorias.Find(id);
+            Categoria categoriaEspecifico = _categoriaRepository.GetCategoria(id);
 
             if (categoriaEspecifico is null)
             {
                 return NotFound($"Categoria não encontrada. Id={id}");
             }
 
-            _context.Categorias.Remove(categoriaEspecifico);
-            _context.SaveChanges();
-            return NoContent();
+            _categoriaRepository.Delete(id);
+           
+            return Ok(categoriaEspecifico);
         }
     }
 }

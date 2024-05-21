@@ -1,5 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 using br.com.apicatalogo.Context;
+using br.com.apicatalogo.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,9 +18,11 @@ string mysqlConnection = builder.Configuration.GetConnectionString("DefaultConne
 builder.Services.AddDbContext<ApiCatalogoContext>(options =>
     options.UseMySql(mysqlConnection, ServerVersion.AutoDetect(mysqlConnection)));
 
+builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
+builder.Services.AddScoped<IProdutoRepository, ProdutoRepository>();
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

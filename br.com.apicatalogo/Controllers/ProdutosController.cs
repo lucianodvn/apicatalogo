@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using br.com.apicatalogo.Context;
 using br.com.apicatalogo.Models;
+using br.com.apicatalogo.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,34 +13,34 @@ namespace br.com.apicatalogo.Controllers
     [Route("[controller]")]
     public class ProdutosController : ControllerBase
     {
-        private readonly ApiCatalogoContext _context;
+        private readonly IProdutoRepository _produtoRepository;
 
-        public ProdutosController(ApiCatalogoContext context)
+        public ProdutosController(IProdutoRepository produtoRepository)
         {
-            _context = context;
+            _produtoRepository = produtoRepository;
         }
 
         [HttpGet]
         public ActionResult<IEnumerable<Produto>> Get()
         {
-            var produtos = _context.Produtos.ToList();
+            var produtos = _produtoRepository.GetProdutos().ToList();
             if (produtos is null)
             {
                 return NotFound("Não há produtos.");
             }
-            return produtos;
+            return Ok(produtos);
         }
 
   
         [HttpGet("{id:int}", Name="ObterProduto")]
         public ActionResult<Produto> Get(int id)
         {
-            var produto = _context.Produtos.FirstOrDefault(x => x.IdProduto == id);
+            var produto = _produtoRepository.GetProduto(id);
             if(produto is null)
             {
                return NotFound("Produto não encontrado.");
             }
-            return produto;
+            return Ok(produto);
         }
 
         [HttpPost]
@@ -47,11 +48,11 @@ namespace br.com.apicatalogo.Controllers
         {
             if (produto is null)
             {
-                return BadRequest();
+                return BadRequest("Produto não encontrado");
             }
 
-            _context.Produtos.Add(produto);
-            _context.SaveChanges();
+            _produtoRepository.Create(produto);
+
             return new CreatedAtRouteResult("ObterProduto", new { id = produto.IdProduto }, produto);
         }
 
@@ -60,27 +61,33 @@ namespace br.com.apicatalogo.Controllers
         {
             if (id != produto.IdProduto)
             {
-                return BadRequest();
+                return BadRequest("Produto não encontrado");
             }
 
-            _context.Produtos.Entry(produto).State = EntityState.Modified;
-            _context.SaveChanges();
-            return Ok();
+            bool produtoAtualizado = _produtoRepository.Update(produto);
+
+            if (produtoAtualizado)
+            {
+                return Ok(produto);
+            }
+            else
+            {
+                return StatusCode(500, $"Falha ao atualizar produdo de id = {id}");
+            }
         }
 
         [HttpDelete("{id}")]
         public ActionResult Delete(int id)
         {
-            Produto produtoEspecifico = _context.Produtos.Find(id);
-
-            if(produtoEspecifico is null)
+            bool produtoDeletado = _produtoRepository.Delete(id);
+            if (produtoDeletado)
             {
-                return NotFound("Produto não encontrado.");
+                return Ok($"Produto excluído.");
             }
-
-            _context.Produtos.Remove(produtoEspecifico);
-            _context.SaveChanges();
-            return NoContent();
+            else
+            {
+               return StatusCode(500, $"Falha ao excluir produto de id = {id}");
+            }
         }
     }
 }
