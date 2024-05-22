@@ -1,14 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
-using br.com.apicatalogo.Context;
+﻿using br.com.apicatalogo.DTOs;
+using br.com.apicatalogo.DTOs.Mappings;
 using br.com.apicatalogo.Models;
-using br.com.apicatalogo.Repositories;
 using br.com.apicatalogo.Repositories.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace br.com.apicatalogo.Controllers
 {
@@ -23,14 +17,17 @@ namespace br.com.apicatalogo.Controllers
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<Categoria>> Get()
+        public ActionResult<IEnumerable<CategoriaDTO>> Get()
         {
             var categorias = _unitOfWork.CategoriaRepository.GetAll();
             if (categorias is null)
             {
                 return NotFound("Não há produtos.");
             }
-            return Ok(categorias);
+
+            var categoriasDTO = categorias.ToCategoriaDTOList();
+
+            return Ok(categoriasDTO);
         }
 
 
@@ -42,51 +39,63 @@ namespace br.com.apicatalogo.Controllers
             {
                 return NotFound("Categoria não encontrado.");
             }
-            return Ok(categoria);
+
+            var categoriaDTO = categoria.ToCategoriaDTO();
+
+            return Ok(categoriaDTO);
         }
 
         [HttpPost]
-        public ActionResult Post([FromBody] Categoria categoria)
+        public ActionResult<CategoriaDTO> Post([FromBody] CategoriaDTO categoriaDTO)
         {
-            if (categoria is null)
+            if (categoriaDTO is null)
             {
                 return BadRequest();
             }
 
-            _unitOfWork.CategoriaRepository.Create(categoria);
+            var categoria = categoriaDTO.ToCategoria();
+
+            var novaCategoriaDTO = _unitOfWork.CategoriaRepository.Create(categoria);
             _unitOfWork.SalvarAlteracoes();
 
-            return new CreatedAtRouteResult("ObterCategoria", new { id = categoria.CategoriaId }, categoria);
+            return new CreatedAtRouteResult("ObterCategoria", new { id = novaCategoriaDTO.CategoriaId }, novaCategoriaDTO);
         }
 
         [HttpPut("{id:int}")]
-        public ActionResult Put(int id, [FromBody] Categoria categoria)
+        public ActionResult<CategoriaDTO> Put(int id, [FromBody] CategoriaDTO categoriaDTO)
         {
-            if (id != categoria.CategoriaId)
+            if (id != categoriaDTO.CategoriaId)
             {
                 return BadRequest();
             }
 
-            _unitOfWork.CategoriaRepository.Update(categoria);
+            var categoria = categoriaDTO.ToCategoria();
+
+            var categoriaAtualizada = _unitOfWork.CategoriaRepository.Update(categoria);
             _unitOfWork.SalvarAlteracoes();
 
-            return Ok(categoria);
+            var categoriaAtualizadaDTO = categoriaAtualizada.ToCategoriaDTO();
+
+            return Ok(categoriaAtualizadaDTO);
         }
 
         [HttpDelete("{id}")]
-        public ActionResult Delete(int id)
+        public ActionResult<CategoriaDTO> Delete(int id)
         {
-            Categoria categoriaEspecifico = _unitOfWork.CategoriaRepository.Get(c => c.CategoriaId == id);
+            Categoria categoria = _unitOfWork.CategoriaRepository.Get(c => c.CategoriaId == id);
 
-            if (categoriaEspecifico is null)
+            if (categoria is null)
             {
                 return NotFound($"Categoria não encontrada. Id={id}");
             }
 
-            _unitOfWork.CategoriaRepository.Delete(categoriaEspecifico);
+            var categoriaExcluida = _unitOfWork.CategoriaRepository.Delete(categoria);
+
             _unitOfWork.SalvarAlteracoes();
 
-            return Ok(categoriaEspecifico);
+            var categoriaExcluidaDTO = categoriaExcluida.ToCategoriaDTO();
+
+            return Ok(categoriaExcluidaDTO);
         }
     }
 }
