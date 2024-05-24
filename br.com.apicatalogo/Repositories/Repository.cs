@@ -1,18 +1,17 @@
-﻿using System;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using br.com.apicatalogo.Context;
 using Microsoft.EntityFrameworkCore;
 
 namespace br.com.apicatalogo.Repositories
 {
-	public class Repository<T> : IRepository<T> where T : class
-	{
+    public class Repository<T> : IRepository<T> where T : class
+    {
         protected readonly ApiCatalogoContext _context;
 
         public Repository(ApiCatalogoContext context)
-		{
+        {
             _context = context;
-		}
+        }
 
         public T Create(T entity)
         {

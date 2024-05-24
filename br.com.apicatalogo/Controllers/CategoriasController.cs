@@ -2,6 +2,7 @@
 using br.com.apicatalogo.DTOs.Mappings;
 using br.com.apicatalogo.Models;
 using br.com.apicatalogo.Repositories.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace br.com.apicatalogo.Controllers
@@ -17,6 +18,7 @@ namespace br.com.apicatalogo.Controllers
         }
 
         [HttpGet]
+        [Authorize]
         public ActionResult<IEnumerable<CategoriaDTO>> Get()
         {
             var categorias = _unitOfWork.CategoriaRepository.GetAll();
