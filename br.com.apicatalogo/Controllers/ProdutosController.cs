@@ -17,15 +17,15 @@ namespace br.com.apicatalogo.Controllers
         private readonly IMapper _mapper;
 
         public ProdutosController(IUnitOfWork unitOfWork,
-            IProdutoRepository produtoRepository,
             IMapper mapper)
         {
             _unitOfWork = unitOfWork;
-            _produtoRepository = produtoRepository;
             _mapper = mapper;
         }
 
         [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult<IEnumerable<ProdutoDTO>> Get()
         {
             var produtos = _unitOfWork.ProdutoRepository.GetAll();
@@ -41,6 +41,8 @@ namespace br.com.apicatalogo.Controllers
 
 
         [HttpGet("{id:int}", Name = "ObterProduto")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult<ProdutoDTO> Get(int id)
         {
             var produto = _unitOfWork.ProdutoRepository.Get(p => p.IdProduto == id);
